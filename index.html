@@ -11,8 +11,11 @@
 <body>
   <h2>Staff Daily Report</h2>
   <form id="staffForm">
-    <input type="text" id="staffName" placeholder="Staff Name" required>
+    <input type="text" id="staffName" placeholder="Name of Staff" required>
+    <input type="date" id="reportDate" required>
     <input type="text" id="workDone" placeholder="Work Done" required>
+    <input type="number" id="targetGiven" placeholder="Target Given" required>
+    <input type="number" id="targetAchieved" placeholder="Target Achieved" required>
     <button type="submit">Submit</button>
   </form>
 
@@ -22,22 +25,46 @@
     document.getElementById("staffForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
+      const staffName = document.getElementById("staffName").value.trim();
+      const reportDate = document.getElementById("reportDate").value;
+      const workDone = document.getElementById("workDone").value.trim();
+      const targetGiven = document.getElementById("targetGiven").value;
+      const targetAchieved = document.getElementById("targetAchieved").value;
+      const entryKey = staffName + "_" + reportDate;
+
+      if (localStorage.getItem(entryKey)) {
+        document.getElementById("status").innerText = "You've already submitted for this date.";
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(function(position) {
         const data = {
-          staffName: document.getElementById("staffName").value,
-          workDone: document.getElementById("workDone").value,
+          staffName: staffName,
+          reportDate: reportDate,
+          workDone: workDone,
+          targetGiven: targetGiven,
+          targetAchieved: targetAchieved,
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         };
 
         fetch("https://script.google.com/macros/s/AKfycbyhsm_sLsx11eIfk1FVeC3C-wnF2zjZQ8l4a3cpjjPHgC0apAX--xqxnZmcZkOKT-0J/exec", {
           method: "POST",
-          contentType: "application/json",
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify(data)
-        }).then(response => {
+        })
+        .then(response => {
+          if (!response.ok) throw new Error("Network error");
+          return response.text();
+        })
+        .then(result => {
           document.getElementById("status").innerText = "Submitted successfully!";
           document.getElementById("staffForm").reset();
-        }).catch(error => {
+          localStorage.setItem(entryKey, "submitted");
+        })
+        .catch(error => {
           document.getElementById("status").innerText = "Submission failed!";
         });
       }, function(error) {
@@ -47,3 +74,4 @@
   </script>
 </body>
 </html>
+
